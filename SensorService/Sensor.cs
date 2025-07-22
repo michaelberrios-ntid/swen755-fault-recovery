@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 namespace SensorService
 {
     /// <summary>
@@ -13,6 +15,9 @@ namespace SensorService
         public bool IsBackup { get; }
         public double Health { get; private set; }
         public bool FallbackMode { get; private set; }
+        // private string CheckpointPath() => $"{Id}-checkpoint.json";
+        private string CheckpointPath() => Path.Combine("/checkpoints", $"{Id}-checkpoint.json");
+
 
         private static readonly Random random = new();
         private const double HEALTHY_CAP = 0.9;
@@ -35,12 +40,16 @@ namespace SensorService
             Health = 1.0;
             FallbackMode = false;
             fallbackRecover = 0;
+
+            if (isBackup)
+                LoadCheckpoint();
         }
 
         /// <summary>
         /// Checks the health of the sensor and returns a status message.
-        /// If the sensor is in fallback mode, it will increment the recovery counter.
-        /// If the health is below the warning threshold, it will enter fallback mode.
+        /// If the sensor is in fallback mode, it increments the recovery counter and returns its status.
+        /// Otherwise, it simulates a new health value, determines the status, and updates internal state.
+        /// The sensor’s state is saved to a checkpoint file after each health check.
         /// </summary>
         /// <returns>A string indicating the health status of the sensor.</returns>
         /// <remarks>
@@ -54,6 +63,7 @@ namespace SensorService
             if (FallbackMode && fallbackRecover < 3)
             {
                 fallbackRecover++;
+                SaveCheckpoint();
                 return Format(Health, "FALLBACK");
             }
 
@@ -66,16 +76,20 @@ namespace SensorService
             else
                 Health = 0.5 + random.NextDouble() * 0.3;
 
+            string status;
+
             if (Health < WARN_CAP)
             {
                 FallbackMode = true;
-                return Format(Health, "FAIL");
+                status = "FAIL";
             }
+            else if (Health < HEALTHY_CAP)
+                status = "WARN";
+            else
+                status = "HEALTHY";
 
-            if (Health < HEALTHY_CAP)
-                return Format(Health, "WARN");
-
-            return Format(Health, "HEALTHY");
+            SaveCheckpoint();
+            return Format(Health, status);
         }
 
         /// <summary>
@@ -96,6 +110,31 @@ namespace SensorService
         private string Format(double health, string status)
         {
             return $"\t{health:P2}\t{status}";
+        }
+
+        public void SaveCheckpoint()
+        {
+            var state = new CheckpointState(Health, FallbackMode, fallbackRecover);
+            File.WriteAllText(CheckpointPath(), JsonSerializer.Serialize(state));
+        }
+
+        public void LoadCheckpoint()
+        {
+            if (!File.Exists(CheckpointPath()))
+                return;
+
+            CheckpointState? state = JsonSerializer.Deserialize<CheckpointState>(File.ReadAllText(CheckpointPath()));
+            if (state != null)
+            {
+                Health = state.Health;
+                FallbackMode = state.FallbackMode;
+                fallbackRecover = state.FallbackRecover;
+
+                Console.WriteLine($"[{Name}] Loaded Checkpoint:\n" +
+                                  $"Health={Health:P2}, " +
+                                  $"FallbackMode={FallbackMode}, " +
+                                  $"FallbackRecover={fallbackRecover}");
+            }
         }
     }
 }

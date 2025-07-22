@@ -53,12 +53,23 @@ namespace SensorService
                 string request = Encoding.UTF8.GetString(buffer, 0, read).Trim().ToUpper();
 
                 // Handle the request based on the command received
-                string response = request switch
+                string response;
+                switch (request)
                 {
-                    SensorMessages.PING => sensor.CheckHealth(),
-                    SensorMessages.RESTART => sensor.RestartAndReport(),
-                    _ => "UNKNOWN_COMMAND"
-                };
+                    case SensorMessages.PING:
+                        response = sensor.CheckHealth();
+                        break;
+                    case SensorMessages.RESTART:
+                        response = sensor.RestartAndReport();
+                        break;
+                    case SensorMessages.RELOAD:
+                        sensor.LoadCheckpoint();
+                        response = "CHECKPOINT_RELOADED";
+                        break;
+                    default:
+                        response = "UNKNOWN_COMMAND";
+                        break;
+                }
 
                 byte[] reply = Encoding.UTF8.GetBytes(response);
                 stream.Write(reply, 0, reply.Length);

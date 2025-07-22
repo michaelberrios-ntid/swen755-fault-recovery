@@ -15,6 +15,9 @@ services:
       - IS_PRIMARY=true
     expose:
       - "9000-9012"
+    volumes:
+      - checkpoints:/checkpoints
+
   backup-sensor-cluster:
     build:
       context: .
@@ -25,3 +28,8 @@ services:
       - IS_PRIMARY=false
     expose:
       - "9000-9012"
+    volumes:
+      - checkpoints:/checkpoints
+
+volumes:
+  checkpoints: {}

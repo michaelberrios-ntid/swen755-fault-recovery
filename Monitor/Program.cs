@@ -63,6 +63,12 @@ namespace MonitorApp
                         {
                             Console.WriteLine($"→ Switching to backup: {backup.Name}");
                             activeSensors[id] = backup;
+
+                            // Force the backup to load checkpoint
+                            PingSensor("backup-sensor-cluster", backup.Port, SensorMessages.RELOAD);
+                            // Thread.Sleep(500); // small wait before sending RELOAD
+                            // string reloadResponse = PingSensor("backup-sensor-cluster", backup.Port, SensorMessages.RELOAD);
+                            // Console.WriteLine($"→ Reload response: {reloadResponse}");
                         }
                     }
                     // Handle the fallback logic if a primary sensor recovers, switch back to the primary sensor
@@ -91,15 +97,15 @@ namespace MonitorApp
         /// <param name="host">The host address of the sensor.</param>
         /// <param name="port">The port number of the sensor.</param>
         /// <returns>Status message from the sensor.</returns>
-        static string PingSensor(string host, int port)
+        static string PingSensor(string host, int port, string message = SensorMessages.PING)
         {
             try
             {
                 using var client = new TcpClient(host, port);
                 using var stream = client.GetStream();
 
-                byte[] message = Encoding.UTF8.GetBytes(SensorMessages.PING);
-                stream.Write(message, 0, message.Length);
+                byte[] payload = Encoding.UTF8.GetBytes(message);
+                stream.Write(payload, 0, payload.Length);
 
                 byte[] buffer = new byte[256];
                 int read = stream.Read(buffer, 0, buffer.Length);
