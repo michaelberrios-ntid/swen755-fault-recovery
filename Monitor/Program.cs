@@ -1,6 +1,6 @@
-﻿using Shared;
+using Shared;
 
-namespace Monitor
+namespace MonitorApp
 {
     class Program
     {
@@ -33,7 +33,6 @@ namespace Monitor
 
                 foreach (var (id, currentSensor) in currentSensors)
                 {
-                    string hostType = currentSensor.IsBackup ? "backup" : "primary";
                     Console.WriteLine($"{currentSensor.Name,-25} → {currentSensor.LastStatus,-8}");
                 }
 
