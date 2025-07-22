@@ -97,5 +97,17 @@ namespace SensorService
         {
             return $"\t{health:P2}\t{status}";
         }
+
+        private string GenerateData()
+        {
+            return $"{{\"sensor_id\":\"{Id}\",\"data\":\"{random.NextDouble()}\",\"timestamp\":\"{DateTime.Now:yyyy-MM-ddTHH:mm:ssZ}\"}}";
+        }
+
+        public string GetData()
+        {
+            Console.WriteLine($"Sensor {Name} on {System.Environment.GetEnvironmentVariable("HOSTNAME")} is generating data...");
+            // Simulate data retrieval and format output as json for simplicity
+            return GenerateData();
+        }
     }
 }

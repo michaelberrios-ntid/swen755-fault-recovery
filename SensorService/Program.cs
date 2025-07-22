@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using System.Data;
+using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using Shared;
@@ -9,8 +10,11 @@ namespace SensorService
     {
         static void Main(string[] args)
         {
+            // Check if this sensor cluster is initialized as primary or backup from environment variables
+            var isPrimary = Environment.GetEnvironmentVariable("IS_PRIMARY")?.ToLower() == "true";
+
             // Start each sensor server in its own thread
-            foreach (var sensor in SensorRegistry.All)
+            foreach (var sensor in SensorRegistry.All.Where(s => s.IsBackup == !isPrimary))
             {
                 var thread = new Thread(() => StartSensorServer(sensor));
                 thread.Start();
@@ -38,7 +42,7 @@ namespace SensorService
                 _ => throw new ArgumentException($"Unknown sensor type in ID: {sensorInfo.Id}")
             };
 
-            var listener = new TcpListener(IPAddress.Loopback, sensorInfo.Port);
+            var listener = new TcpListener(IPAddress.Any, sensorInfo.Port);
             listener.Start();
 
             Console.WriteLine($"Sensor '{sensorInfo.Name}' is listening on port {sensorInfo.Port}...");
@@ -57,6 +61,7 @@ namespace SensorService
                 {
                     SensorMessages.PING => sensor.CheckHealth(),
                     SensorMessages.RESTART => sensor.RestartAndReport(),
+                    SensorMessages.GET_DATA => sensor.GetData(),
                     _ => "UNKNOWN_COMMAND"
                 };
 

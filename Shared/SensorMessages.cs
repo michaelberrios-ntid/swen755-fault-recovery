@@ -7,5 +7,6 @@
         /// </summary>
         public const string PING = "PING";
         public const string RESTART = "RESTART";
+        public const string GET_DATA = "GET_DATA";
     }
 }
