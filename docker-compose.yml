@@ -1,0 +1,27 @@
+services:
+  monitor:
+    build:
+      context: .
+      dockerfile: Monitor/Dockerfile
+    ports:
+      - "5001:80"
+  primary-sensor-cluster:
+    build:
+      context: .
+      dockerfile: SensorService/Dockerfile
+    environment:
+      # This environment variable indicates if this is the primary sensor cluster
+      # it is used to determine which sensors to add to the cluster
+      - IS_PRIMARY=true
+    expose:
+      - "9000-9012"
+  backup-sensor-cluster:
+    build:
+      context: .
+      dockerfile: SensorService/Dockerfile
+    environment:
+      # This environment variable indicates if this is the backup sensor cluster
+      # it is used to determine which sensors to add to the cluster
+      - IS_PRIMARY=false
+    expose:
+      - "9000-9012"

@@ -38,7 +38,7 @@ namespace SensorService
                 _ => throw new ArgumentException($"Unknown sensor type in ID: {sensorInfo.Id}")
             };
 
-            var listener = new TcpListener(IPAddress.Loopback, sensorInfo.Port);
+            var listener = new TcpListener(IPAddress.Any, sensorInfo.Port);
             listener.Start();
 
             Console.WriteLine($"Sensor '{sensorInfo.Name}' is listening on port {sensorInfo.Port}...");

@@ -1,4 +1,4 @@
-﻿using System.Net.Sockets;
+﻿﻿using System.Net.Sockets;
 using System.Text;
 using Shared;
 
@@ -48,11 +48,12 @@ namespace MonitorApp
             {
                 Console.Clear();
                 Console.WriteLine($"Sensor Status - {DateTime.Now:HH:mm:ss}\n");
-                Console.WriteLine($"{"Sensor Name",-32}{"Health", -8}{"Status"}");
+                Console.WriteLine($"{"Sensor Name",-32}{"Health",-8}{"Status"}");
 
                 foreach (var (id, currentSensor) in activeSensors.ToList())
                 {
-                    string status = PingSensor("127.0.0.1", currentSensor.Port);
+                    string host = currentSensor.IsBackup ? "backup-sensor-cluster" : "primary-sensor-cluster";
+                    string status = PingSensor(host, currentSensor.Port);
                     Console.WriteLine($"{currentSensor.Name,-25} → {status}");
 
                     // Handle the fallback logic if a primary sensor fails
@@ -68,7 +69,9 @@ namespace MonitorApp
                     else if (currentSensor.IsBackup && primaryLookup.TryGetValue(id, out var primary))
                     {
                         // Check if primary is now healthy
-                        string primaryStatus = PingSensor("127.0.0.1", primary.Port);
+                        host = "primary-sensor-cluster";
+                        string primaryStatus = PingSensor(host, primary.Port);
+                        Console.WriteLine($"{primary.Name,-25} → {primaryStatus}");
                         if (primaryStatus.Contains("HEALTHY") || primaryStatus.Contains("WARN"))
                         {
                             Console.WriteLine($"→ Primary recovered. Switching back to: {primary.Name}");
