@@ -123,6 +123,42 @@ classDiagram
     Sensor --> CheckpointState : uses
 ```
 
+## Sequence Diagram
+```mermaid
+%%{init: {'theme': 'default', 'themeVariables': { 'lineColor': '#FFD700' }}}%%
+sequenceDiagram
+    participant Monitor as SensorMonitor
+    participant Primary as Primary Sensor
+    participant Backup as Backup Sensor
+
+    Monitor->> Registry: All()
+    Registry-->>Monitor: List of SensorInfo objects
+    loop Every Monitoring Interval
+        Monitor->>Primary: PING (health check)
+        alt Primary Healthy (HEALTHY/WARN)
+            Primary-->>Monitor: Health Status
+        else Primary Failing (FAIL/FALLBACK)
+            Primary-->>Monitor: FAIL/FALLBACK status
+            Monitor->>Registry: Lookup backup sensor
+            Registry-->>Monitor: Backup sensor info
+            Monitor->>Backup: RELOAD (load checkpoint)
+            %% Monitor->>Backup: PING (verify backup)
+            Backup-->>Monitor: CHECKPOINT_RELOADED
+            Monitor->>Monitor: Switch to backup in active sensors
+            Monitor->>Primary: RESTART (attempt recovery)
+            Primary-->>Monitor: RESTARTED status
+        end
+    end
+Alright
+    loop Recovery Monitoring
+        Monitor->>Primary: PING (health check)
+        Primary-->>Monitor: Health Status
+        alt Primary Recovered (HEALTHY/WARN)
+            Monitor->>Monitor: Switch back to primary
+        end
+    end
+```
+
 # Requirements
 - Docker and Docker Compose installed
 - .NET 9 SDK installed (for local development)
