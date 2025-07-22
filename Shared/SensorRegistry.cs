@@ -31,5 +31,5 @@ namespace Shared
         };
     }
 
-    public record SensorInfo(string Id, string Name, int Port, bool IsBackup = false);
+    public record SensorInfo(string Id, string Name, int Port, bool IsBackup = false, string LastStatus = "UNKNOWN");
 }

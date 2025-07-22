@@ -1,0 +1,92 @@
+classDiagram
+    namespace Shared {
+        class SensorMessages {
+            <<static>>
+            + PING: const string
+            + RESTART: const string
+            + RELOAD: const string
+        }
+
+        class SensorRegistry {
+            <<static>>
+            + All: List~SensorInfo~
+        }
+
+        class SensorInfo {
+            + Id: string
+            + Name: string
+            + Port: int
+            + IsBackup: bool
+            + LastStatus: string
+        }
+    }
+    namespace SensorService {
+        class Program {
+            + Main(args: string[])
+            + StartSensorServer(sensor: Sensor)
+        }
+    
+        class Sensor {
+            <<abstract>>
+            + Id: string
+            + Name: string
+            + Port: int
+            + IsBackup: bool
+            + Health: double
+            + FallbackMode: bool
+            - random: Random
+            - HEALTHY_CAP: double = 0.9
+            - WARN_CAP: double = 0.8
+            - fallbackRecover: int
+            + CheckHealth(): string
+            + RestartAndReport(): string
+            - Format(health: double, status: string): string
+            + SaveCheckpoint(): void
+            + LoadCheckpoint(): void
+        }
+
+        class LIDARSensor {
+            + LIDARSensor(id: string, name: string, port: int, isBackup: bool)
+        }
+
+        class CameraSensor {
+            + CameraSensor(id: string, name: string, port: int, isBackup: bool)
+        }
+
+        class RadarSensor {
+            + RadarSensor(id: string, name: string, port: int, isBackup: bool)
+        }
+
+        class CheckpointState {
+            + Health: double
+            + FallbackMode: bool
+            + FallbackRecover: int
+        }
+    }
+    note for Program "This class is the entry point for the sensor service application.\n It initializes and starts a TCP listener thread for each sensor in the cluster based on the cluster configuration and SensorRegistry."
+    Program --> SensorRegistry : uses
+    Program "1" --> "many" Sensor : creates
+    Sensor <|-- LIDARSensor
+    Sensor <|-- CameraSensor
+    Sensor <|-- RadarSensor
+
+    namespace MonitorApp {
+        class SensorMonitor {
+            - _sleepTime: int
+            - _activeSensors: ConcurrentDictionary~string,SensorInfo~
+            - _backupLookup: Dictionary~string,SensorInfo~
+            - _primaryLookup: Dictionary~string,SensorInfo~
+            - _isRunning: bool
+            + StartMonitoring()
+            + StopMonitoring()
+            + GetActiveSensors(): Dictionary~string,SensorInfo~
+            + PingSensor(host: string, port: int, message: string): string
+        }
+    }
+
+    SensorInfo "1" *-- "many" SensorRegistry : contains
+    SensorMonitor --> Sensor : monitors
+    SensorMonitor --> SensorMessages : uses
+    SensorMonitor --> SensorRegistry : uses
+    SensorMonitor --> SensorInfo : uses
+    Sensor --> CheckpointState : uses
